@@ -47,8 +47,8 @@ class SSDBMetrics(threading.Thread):
         self.password = password
         self.tags = tags
 
-        self.vauge_keywords = ['links']
-        self.counter_keywords = ['total_calls', 'dbsize']
+        self.vauge_keywords = ['links', 'dbsize']
+        self.counter_keywords = ['total_calls']
         self.level_db_keywords = ['files', 'size']
 
         super(SSDBMetrics, self).__init__(None, name=endpoint)
@@ -76,7 +76,7 @@ class SSDBMetrics(threading.Thread):
                     'timestamp': timestamp,
                     'step': self.falcon_step,
                     'tags': self.tags,
-                    'value': ssdb_info[keyword]
+                    'value': int(ssdb_info[keyword])
                 }
                 falcon_metrics.append(falcon_metric)
             # Original metrics
@@ -88,13 +88,13 @@ class SSDBMetrics(threading.Thread):
                     'timestamp': timestamp,
                     'step': self.falcon_step,
                     'tags': self.tags,
-                    'value': ssdb_info[keyword]
+                    'value': int(ssdb_info[keyword])
                 }
                 falcon_metrics.append(falcon_metric)
             for level_stat in ssdb_info["leveldb.stats"]:
                 for keyword in self.level_db_keywords:
                     falcon_metric = {
-                        'counterType': 'COUNTER',
+                        'counterType': 'GAUGE',
                         'metric': "ssdb.level_%d_%s" % (level_stat['level'], keyword),
                         'endpoint': self.endpoint,
                         'timestamp': timestamp,
