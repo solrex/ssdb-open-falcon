@@ -47,12 +47,23 @@ class SSDBMetrics(threading.Thread):
         self.password = password
         self.tags = tags
 
-        self.vauge_keywords = ['links', 'dbsize']
+        self.gauge_keywords = ['links', 'dbsize']
         self.counter_keywords = ['total_calls']
         self.level_db_keywords = ['files', 'size']
 
         super(SSDBMetrics, self).__init__(None, name=endpoint)
         self.setDaemon(daemon)
+
+    def new_metric(self, metric, value, type = 'GAUGE'):
+        return {
+            'counterType': type,
+            'metric': metric,
+            'endpoint': self.endpoint,
+            'timestamp': self.timestamp,
+            'step': self.falcon_step,
+            'tags': self.tags,
+            'value': value
+        }
 
     def run(self):
         try:
@@ -65,43 +76,18 @@ class SSDBMetrics(threading.Thread):
         falcon_metrics = []
         # Statistics
         try:
-            timestamp = int(time.time())
+            self.timestamp = int(time.time())
             ssdb_info = self.ssdb.execute_command("info")
             # Original metrics
-            for keyword in self.vauge_keywords:
-                falcon_metric = {
-                 'counterType': 'GAUGE',
-                    'metric': "ssdb." + keyword,
-                    'endpoint': self.endpoint,
-                    'timestamp': timestamp,
-                    'step': self.falcon_step,
-                    'tags': self.tags,
-                    'value': int(ssdb_info[keyword])
-                }
+            for keyword in self.gauge_keywords:
+                falcon_metric = self.new_metric("ssdb." + keyword, int(ssdb_info[keyword]))
                 falcon_metrics.append(falcon_metric)
-            # Original metrics
             for keyword in self.counter_keywords:
-                falcon_metric = {
-                 'counterType': 'COUNTER',
-                    'metric': "ssdb." + keyword,
-                    'endpoint': self.endpoint,
-                    'timestamp': timestamp,
-                    'step': self.falcon_step,
-                    'tags': self.tags,
-                    'value': int(ssdb_info[keyword])
-                }
+                falcon_metric = self.new_metric("ssdb." + keyword, int(ssdb_info[keyword]), type='COUNTER')
                 falcon_metrics.append(falcon_metric)
             for level_stat in ssdb_info["leveldb.stats"]:
                 for keyword in self.level_db_keywords:
-                    falcon_metric = {
-                        'counterType': 'GAUGE',
-                        'metric': "ssdb.level_%d_%s" % (level_stat['level'], keyword),
-                        'endpoint': self.endpoint,
-                        'timestamp': timestamp,
-                        'step': self.falcon_step,
-                        'tags': self.tags,
-                        'value': level_stat[keyword]
-                    }
+                    falcon_metric = self.new_metric("ssdb.level_%d_%s" % (level_stat['level'], keyword), level_stat[keyword])
                     falcon_metrics.append(falcon_metric)
             falcon_metrics.append(falcon_metric)
             #print json.dumps(falcon_metrics)
