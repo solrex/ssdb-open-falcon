@@ -70,12 +70,8 @@ class SSDBMetrics(threading.Thread):
             self.ssdb = ssdb.SSDB(host = self.ssdb_conf['host'], port = self.ssdb_conf['port'])
             self.ssdb.execute_command("auth", self.ssdb_conf['password'])
             self.ssdb.set_response_callback('info', info_parser)
-        except Exception as e:
-            print datetime.now(), "ERROR: [%s]" % self.ssdb_conf['endpoint'], e
-            return
-        falcon_metrics = []
-        # Statistics
-        try:
+            falcon_metrics = []
+            # Statistics
             self.timestamp = int(time.time())
             ssdb_info = self.ssdb.execute_command("info")
             # Original metrics
@@ -89,11 +85,13 @@ class SSDBMetrics(threading.Thread):
                 for keyword in self.level_db_keywords:
                     falcon_metric = self.new_metric("ssdb.level_%d_%s" % (level_stat['level'], keyword), level_stat[keyword])
                     falcon_metrics.append(falcon_metric)
-            falcon_metrics.append(falcon_metric)
             if self.falcon_conf['test_run']:
                 print json.dumps(falcon_metrics)
             else:
                 req = requests.post(self.falcon_conf['push_url'], data=json.dumps(falcon_metrics))
                 print datetime.now(), "INFO: [%s]" % self.ssdb_conf['endpoint'], "[%s]" % self.falcon_conf['push_url'], req.text
         except Exception as e:
-            print datetime.now(), "ERROR: [%s]" % self.ssdb_conf['endpoint'], e
+            if self.falcon_conf['test_run']:
+                raise
+            else:
+                print datetime.now(), "ERROR: [%s]" % self.ssdb_conf['endpoint'], e
