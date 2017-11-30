@@ -1,5 +1,6 @@
 falcon:
     push_url: http://127.0.0.1:6071/v1/push
+    step: 60
 
 # SSDB clusters
 ssdb-clusters:

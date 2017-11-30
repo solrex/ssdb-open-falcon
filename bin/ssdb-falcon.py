@@ -10,12 +10,7 @@ with open('conf/ssdb-open-falcon.yml', 'r') as ymlfile:
 threads = []
 
 for ssdb_cluster in config['ssdb-clusters']:
-    metric_thread = ssdbmetrics.SSDBMetrics(config['falcon']['push_url'],
-                                            ssdb_cluster['endpoint'],
-                                            ssdb_cluster['host'],
-                                            ssdb_cluster['port'],
-                                            ssdb_cluster['password'],
-                                            ssdb_cluster['tags'])
+    metric_thread = ssdbmetrics.SSDBMetrics(config['falcon'], ssdb_cluster)
     metric_thread.start()
     threads.append(metric_thread)
 

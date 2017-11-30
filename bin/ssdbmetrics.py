@@ -38,40 +38,40 @@ def info_parser(lst):
 
 
 class SSDBMetrics(threading.Thread):
-    def __init__(self, falcon_url, endpoint, host, port, password = '', tags = '', falcon_step = 60, daemon = False):
-        self.falcon_url = falcon_url
-        self.falcon_step = falcon_step
-        self.host = host
-        self.port = port
-        self.endpoint = endpoint
-        self.password = password
-        self.tags = tags
+    def __init__(self, falcon_conf, ssdb_conf):
+        self.falcon_conf = falcon_conf
+        self.ssdb_conf = ssdb_conf
+        # Assign default conf
+        if 'test_run' not in self.falcon_conf:
+            self.falcon_conf['test_run'] = False
+        if 'step' not in self.falcon_conf:
+            self.falcon_conf['step'] = 60
 
         self.gauge_keywords = ['links', 'dbsize']
         self.counter_keywords = ['total_calls']
         self.level_db_keywords = ['files', 'size']
 
-        super(SSDBMetrics, self).__init__(None, name=endpoint)
-        self.setDaemon(daemon)
+        super(SSDBMetrics, self).__init__(None, name=self.ssdb_conf['endpoint'])
+        self.setDaemon(False)
 
     def new_metric(self, metric, value, type = 'GAUGE'):
         return {
             'counterType': type,
             'metric': metric,
-            'endpoint': self.endpoint,
+            'endpoint': self.ssdb_conf['endpoint'],
             'timestamp': self.timestamp,
-            'step': self.falcon_step,
-            'tags': self.tags,
+            'step': self.falcon_conf['step'],
+            'tags': self.ssdb_conf['tags'],
             'value': value
         }
 
     def run(self):
         try:
-            self.ssdb = ssdb.SSDB(host = self.host, port = self.port)
-            self.ssdb.execute_command("auth", self.password)
+            self.ssdb = ssdb.SSDB(host = self.ssdb_conf['host'], port = self.ssdb_conf['port'])
+            self.ssdb.execute_command("auth", self.ssdb_conf['password'])
             self.ssdb.set_response_callback('info', info_parser)
         except Exception as e:
-            print datetime.now(), "ERROR: [%s]" % self.endpoint, e
+            print datetime.now(), "ERROR: [%s]" % self.ssdb_conf['endpoint'], e
             return
         falcon_metrics = []
         # Statistics
@@ -90,12 +90,10 @@ class SSDBMetrics(threading.Thread):
                     falcon_metric = self.new_metric("ssdb.level_%d_%s" % (level_stat['level'], keyword), level_stat[keyword])
                     falcon_metrics.append(falcon_metric)
             falcon_metrics.append(falcon_metric)
-            #print json.dumps(falcon_metrics)
-            req = requests.post(self.falcon_url, data=json.dumps(falcon_metrics))
-            print datetime.now(), "INFO: [%s]" % self.endpoint, "[%s]" % self.falcon_url, req.text
-        except Exception, e:
-            print datetime.now(), "ERROR: [%s]" % self.endpoint, e
-            return
-
-if __name__ == '__main__':
-    SSDBMetrics('', 'localhost', '127.0.0.1', 12700).run()
+            if self.falcon_conf['test_run']:
+                print json.dumps(falcon_metrics)
+            else:
+                req = requests.post(self.falcon_conf['push_url'], data=json.dumps(falcon_metrics))
+                print datetime.now(), "INFO: [%s]" % self.ssdb_conf['endpoint'], "[%s]" % self.falcon_conf['push_url'], req.text
+        except Exception as e:
+            print datetime.now(), "ERROR: [%s]" % self.ssdb_conf['endpoint'], e
