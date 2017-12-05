@@ -2,7 +2,16 @@
 
 SSDB Monitor Script for Open Falcon
 
-### Step 1: Edit conf
+### Step 1: Install ssdb-py
+
+```bash
+git clone https://github.com/solrex/ssdb-py.git
+cd ssdb-py
+sudo python ./setup.py install
+```
+
+
+### Step 2: Edit conf
 
 Rename `ssdb-open-falcon.yml.default` to `ssdb-open-falcon.yml`, then edit the file, and add your ssdb servers.
 
@@ -17,7 +26,7 @@ ssdb-clusters:
 
 ```
 
-### Step 2: Add the monitor script to crontab
+### Step 3: Add the monitor script to crontab
 
 ```
 $ crontab -l
@@ -28,7 +37,15 @@ $ crontab -l
 
 用于 Open Falcon 的 SSDB 监控采集脚本
 
-### 第一步：编辑配置文件
+### 第一步：安装 ssdb-py
+
+```bash
+git clone https://github.com/solrex/ssdb-py.git
+cd ssdb-py
+sudo python ./setup.py install
+```
+
+### 第二步：编辑配置文件
 
 将 `ssdb-open-falcon.yml.default` 重命名为 `ssdb-open-falcon.yml`，然后编辑这个文件，添加你要监控的 SSDB 服务器信息。
 
@@ -43,7 +60,7 @@ ssdb-clusters:
 
 ```
 
-### 第二步：将监控脚本添加到 crontab 中定时执行
+### 第三步：将监控脚本添加到 crontab 中定时执行
 
 ```
 $ crontab -l
